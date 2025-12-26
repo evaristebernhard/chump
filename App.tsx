@@ -97,8 +97,8 @@ const App: React.FC = () => {
           <div className="flex items-center space-x-2">
             <span className="text-2xl">🎓</span>
             <div>
-              <h1 className="text-xl font-bold leading-none">保研地图 (GradMap)</h1>
-              <p className="text-xs text-slate-400">数学与信息科学学院</p>
+              <h1 className="text-xl font-bold leading-none">毕业去向地图 (GradMap)</h1>
+              <p className="text-xs text-slate-400">保研 / 考研 / 就业 / 出国</p>
             </div>
           </div>
           
@@ -145,7 +145,7 @@ const App: React.FC = () => {
               <>
                 <div className="mb-6 flex justify-between items-end">
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-800">去向分布 (Destinations)</h2>
+                    <h2 className="text-2xl font-bold text-slate-800">毕业去向分布 (Graduation Paths)</h2>
                     <p className="text-slate-500 text-sm">点击卡片查看详细名单 (Click cards to see details)</p>
                   </div>
                   <div className="text-right text-xs text-slate-400">
