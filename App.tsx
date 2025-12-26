@@ -188,65 +188,45 @@ const App: React.FC = () => {
             )}
 
             {view === 'advisor' && (
-                <div className="max-w-2xl mx-auto">
-                    <AiAdvisor />
-                </div>
+              <div className="max-w-3xl mx-auto">
+                 <AiAdvisor />
+              </div>
             )}
           </>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-slate-100 py-6 border-t border-slate-200 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
-          &copy; {new Date().getFullYear()} Math & Info Sci GradMap. 
-          <span className="ml-2 block sm:inline">Protected Community Data.</span>
-        </div>
-      </footer>
-
-      {/* Modals */}
-      
-      {/* Group Detail Modal */}
-      {selectedGroup && (
-        <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelectedGroup(null)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50 rounded-t-xl">
-              <h3 className="text-xl font-bold text-indigo-900">{selectedGroup.destination}</h3>
-              <button onClick={() => setSelectedGroup(null)} className="text-indigo-400 hover:text-indigo-700 font-bold text-xl">&times;</button>
-            </div>
-            <div className="overflow-y-auto p-6 space-y-4">
-              {selectedGroup.students.map(student => (
-                <div key={student.id} className="flex justify-between items-start border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                  <div>
-                    <p className="font-bold text-slate-800">
-                      {student.isAnonymous ? '某同学 (Anonymous)' : student.name}
-                      <span className="ml-2 text-xs font-normal text-slate-500 px-2 py-0.5 bg-slate-100 rounded-full">{student.major}</span>
-                    </p>
-                    <p className="text-sm text-slate-500 mt-1">
-                      {student.year}届 · {student.type}
-                    </p>
-                  </div>
-                  {!student.isAnonymous && student.contact && (
-                    <div className="text-right">
-                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                         {student.contact}
-                       </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+       {/* Selected Group Modal */}
+       {selectedGroup && (
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+             <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                <h3 className="text-lg font-bold text-slate-800">{selectedGroup.destination}</h3>
+                <button onClick={() => setSelectedGroup(null)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+             </div>
+             <div className="p-4 overflow-y-auto">
+                <ul className="space-y-3">
+                  {selectedGroup.students.map(s => (
+                    <li key={s.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex justify-between items-center">
+                       <div>
+                         <span className="font-bold text-slate-800">{s.isAnonymous ? '某同学 (Anonymous)' : s.name}</span>
+                         <span className="text-xs text-slate-500 ml-2">{s.year}届 · {s.major}</span>
+                       </div>
+                       <span className="px-2 py-1 text-xs bg-white border border-slate-200 rounded text-slate-600">{s.type}</span>
+                    </li>
+                  ))}
+                </ul>
+             </div>
           </div>
         </div>
       )}
 
-      {/* Admin Panel Modal */}
       {showAdminPanel && (
         <AdminPanel 
           students={students} 
           onDelete={handleDeleteStudent} 
           onReset={handleResetData}
-          onClose={() => setShowAdminPanel(false)} 
+          onClose={() => setShowAdminPanel(false)}
         />
       )}
     </div>
