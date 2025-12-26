@@ -1,50 +1,86 @@
 import { Student } from '../types';
 import { INITIAL_STUDENTS } from '../constants';
+import { supabase } from './supabase';
 
-const STORAGE_KEY = 'grad_map_data_v1';
+const TABLE_NAME = 'students';
 
-export const getStudents = (): Student[] => {
+export const getStudents = async (): Promise<Student[]> => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      // Initialize with seed data if empty
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_STUDENTS));
-      return INITIAL_STUDENTS;
+    const { data, error } = await supabase
+      .from(TABLE_NAME)
+      .select('*')
+      .order('createdAt', { ascending: false }); // Sort by newest first
+
+    if (error) {
+      console.error('Supabase error fetching students:', error);
+      // Fallback: If table doesn't exist or error, return empty array to prevent app crash
+      return []; 
     }
-    return JSON.parse(stored);
+    
+    // Map database columns to CamelCase if necessary, 
+    // but assuming we save them exactly as the interface defines.
+    return data as Student[];
   } catch (e) {
     console.error('Failed to load students', e);
-    // If JSON parse fails, reset to initial
-    return INITIAL_STUDENTS;
+    return [];
   }
 };
 
-export const saveStudent = (student: Student): Student[] => {
-  const current = getStudents();
-  const updated = [student, ...current];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  return updated;
-};
+export const saveStudent = async (student: Student): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from(TABLE_NAME)
+      .insert([student]);
 
-export const updateStudent = (updatedStudent: Student): Student[] => {
-  const current = getStudents();
-  const index = current.findIndex(s => s.id === updatedStudent.id);
-  if (index !== -1) {
-    current[index] = updatedStudent;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+    if (error) {
+      console.error('Error saving student:', error);
+      alert('保存失败 (Save failed): ' + error.message);
+    }
+  } catch (e) {
+    console.error('Exception saving student:', e);
   }
-  return current;
 };
 
-export const deleteStudent = (id: string): Student[] => {
-  const current = getStudents();
-  const updated = current.filter(s => s.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  return updated;
+export const deleteStudent = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from(TABLE_NAME)
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting student:', error);
+      alert('删除失败 (Delete failed): ' + error.message);
+    }
+  } catch (e) {
+    console.error('Exception deleting student:', e);
+  }
 };
 
-// Force reset local storage to seed data (useful for debugging or clearing bad data)
-export const resetStudents = (): Student[] => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_STUDENTS));
-  return INITIAL_STUDENTS;
+// Reset functionality: Deletes all records and re-inserts seed data
+// Warning: This affects the shared database!
+export const resetStudents = async (): Promise<void> => {
+  try {
+    // 1. Delete all rows
+    const { error: deleteError } = await supabase
+      .from(TABLE_NAME)
+      .delete()
+      .neq('id', '0'); // Hack to delete all rows since we need a where clause usually
+
+    if (deleteError) {
+      console.error('Error clearing table:', deleteError);
+      return;
+    }
+
+    // 2. Insert seed data
+    const { error: insertError } = await supabase
+      .from(TABLE_NAME)
+      .insert(INITIAL_STUDENTS);
+
+    if (insertError) {
+      console.error('Error inserting seed data:', insertError);
+    }
+  } catch (e) {
+    console.error('Exception resetting data:', e);
+  }
 };

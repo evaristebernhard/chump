@@ -23,12 +23,21 @@ const App: React.FC = () => {
   const [view, setView] = useState<'map' | 'add' | 'advisor'>('map');
   const [selectedGroup, setSelectedGroup] = useState<GroupedDestination | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // --- Helpers ---
+  const refreshData = async () => {
+    setIsLoading(true);
+    const data = await storageService.getStudents();
+    setStudents(data);
+    setIsLoading(false);
+  };
 
   // --- Effects ---
   useEffect(() => {
     // Load data only after authentication
     if (authLevel !== AuthLevel.NONE) {
-      setStudents(storageService.getStudents());
+      refreshData();
     }
   }, [authLevel]);
 
@@ -52,26 +61,26 @@ const App: React.FC = () => {
     return groups.sort((a, b) => b.count - a.count);
   }, [students]);
 
-  const handleAddStudent = (data: Omit<Student, 'id' | 'createdAt'>) => {
+  const handleAddStudent = async (data: Omit<Student, 'id' | 'createdAt'>) => {
     const newStudent: Student = {
       ...data,
-      id: generateId(),
+      id: generateId(), // We still generate ID client side, or we could let DB do it
       createdAt: Date.now()
     };
-    const updated = storageService.saveStudent(newStudent);
-    setStudents(updated);
+    await storageService.saveStudent(newStudent);
+    await refreshData();
     setView('map');
   };
 
-  const handleDeleteStudent = (id: string) => {
-    const updated = storageService.deleteStudent(id);
-    setStudents(updated);
+  const handleDeleteStudent = async (id: string) => {
+    await storageService.deleteStudent(id);
+    await refreshData();
   };
 
-  const handleResetData = () => {
-    if (window.confirm("WARNING: This will delete all custom entries and reset to the original seed data. Are you sure?")) {
-      const updated = storageService.resetStudents();
-      setStudents(updated);
+  const handleResetData = async () => {
+    if (window.confirm("WARNING: This will delete ALL data in the SHARED database and reset to the seed data. This affects ALL users. Are you sure?")) {
+      await storageService.resetStudents();
+      await refreshData();
     }
   };
 
@@ -95,7 +104,7 @@ const App: React.FC = () => {
           
           <nav className="flex items-center space-x-4">
             <button 
-              onClick={() => setView('map')}
+              onClick={() => { setView('map'); refreshData(); }}
               className={`px-3 py-1 rounded-md text-sm transition-colors ${view === 'map' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:text-white'}`}
             >
               地图 (Map)
@@ -126,59 +135,65 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
-        
-        {view === 'map' && (
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : (
           <>
-            <div className="mb-6 flex justify-between items-end">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-800">去向分布 (Destinations)</h2>
-                <p className="text-slate-500 text-sm">点击卡片查看详细名单 (Click cards to see details)</p>
-              </div>
-              <div className="text-right text-xs text-slate-400">
-                 数据更新至 2030届<br/>
-                 Need help? <a href={`mailto:${ADMIN_EMAIL}`} className="text-indigo-500 hover:underline">Contact Admin</a>
-              </div>
-            </div>
+            {view === 'map' && (
+              <>
+                <div className="mb-6 flex justify-between items-end">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">去向分布 (Destinations)</h2>
+                    <p className="text-slate-500 text-sm">点击卡片查看详细名单 (Click cards to see details)</p>
+                  </div>
+                  <div className="text-right text-xs text-slate-400">
+                     数据更新至 2030届<br/>
+                     Need help? <a href={`mailto:${ADMIN_EMAIL}`} className="text-indigo-500 hover:underline">Contact Admin</a>
+                  </div>
+                </div>
 
-            {groupedData.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 auto-rows-min">
-                {groupedData.map((group) => (
-                  <DestinationCard 
-                    key={group.destination} 
-                    group={group} 
-                    onClick={setSelectedGroup} 
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-20 bg-white rounded-xl border border-slate-200 border-dashed">
-                <span className="text-4xl block mb-2">📭</span>
-                <p className="text-slate-500 font-medium">暂无数据 (No Data Yet)</p>
-                <p className="text-slate-400 text-sm mt-1">
-                  所有种子数据可能已被过滤。<br/>
-                  请点击"添加"按钮录入新的去向信息。
-                </p>
-                <button 
-                   onClick={() => setView('add')}
-                   className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700"
-                >
-                  去添加 (Add Now)
-                </button>
-              </div>
+                {groupedData.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 auto-rows-min">
+                    {groupedData.map((group) => (
+                      <DestinationCard 
+                        key={group.destination} 
+                        group={group} 
+                        onClick={setSelectedGroup} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-20 bg-white rounded-xl border border-slate-200 border-dashed">
+                    <span className="text-4xl block mb-2">📭</span>
+                    <p className="text-slate-500 font-medium">暂无数据 (No Data Yet)</p>
+                    <p className="text-slate-400 text-sm mt-1">
+                      数据库中没有有效数据。<br/>
+                      请点击"添加"按钮录入新的去向信息。
+                    </p>
+                    <button 
+                       onClick={() => setView('add')}
+                       className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700"
+                    >
+                      去添加 (Add Now)
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {view === 'add' && (
+              <DataForm onSubmit={handleAddStudent} onCancel={() => setView('map')} />
+            )}
+
+            {view === 'advisor' && (
+                <div className="max-w-2xl mx-auto">
+                    <AiAdvisor />
+                </div>
             )}
           </>
         )}
-
-        {view === 'add' && (
-          <DataForm onSubmit={handleAddStudent} onCancel={() => setView('map')} />
-        )}
-
-        {view === 'advisor' && (
-            <div className="max-w-2xl mx-auto">
-                <AiAdvisor />
-            </div>
-        )}
-
       </main>
 
       {/* Footer */}
