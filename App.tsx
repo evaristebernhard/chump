@@ -112,7 +112,7 @@ const App: React.FC = () => {
           <div className="flex items-center space-x-2">
             <span className="text-2xl">🎓</span>
             <div>
-              <h1 className="text-xl font-bold leading-none">毕业去向地图 (GradMap)</h1>
+              <h1 className="text-xl font-bold leading-none">去向地图 (PathMap)</h1>
               <p className="text-xs text-slate-400">保研 / 考研 / 就业 / 出国</p>
             </div>
           </div>
@@ -161,7 +161,7 @@ const App: React.FC = () => {
                 <div className="mb-6">
                   <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                     <div>
-                      <h2 className="text-2xl font-bold text-slate-800">毕业去向分布</h2>
+                      <h2 className="text-2xl font-bold text-slate-800">去向分布</h2>
                       <p className="text-slate-500 text-sm">点击卡片查看详细名单</p>
                     </div>
                     

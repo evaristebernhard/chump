@@ -38,7 +38,7 @@ const DataForm: React.FC<DataFormProps> = ({ onSubmit, onCancel }) => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg border border-slate-200 max-w-2xl mx-auto">
-      <h3 className="text-xl font-bold text-slate-800 mb-6">添加新去向 (Add New Path)</h3>
+      <h3 className="text-xl font-bold text-slate-800 mb-6">添加去向 (Add Path)</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -49,7 +49,7 @@ const DataForm: React.FC<DataFormProps> = ({ onSubmit, onCancel }) => {
               required
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
-              className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2"
+              className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2 text-sm"
               placeholder="Your Name"
             />
           </div>
@@ -60,7 +60,7 @@ const DataForm: React.FC<DataFormProps> = ({ onSubmit, onCancel }) => {
               <select
                 value={formData.major}
                 onChange={handleMajorChange}
-                className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2"
+                className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2 text-sm"
               >
                 <option value="数学与应用数学">数学与应用数学</option>
                 <option value="信息与计算科学">信息与计算科学</option>
@@ -74,7 +74,7 @@ const DataForm: React.FC<DataFormProps> = ({ onSubmit, onCancel }) => {
                   required
                   value={formData.major}
                   onChange={e => setFormData({...formData, major: e.target.value})}
-                  className="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2"
+                  className="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2 text-sm"
                   placeholder="请输入专业名称"
                   autoFocus
                 />
@@ -92,14 +92,15 @@ const DataForm: React.FC<DataFormProps> = ({ onSubmit, onCancel }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700">毕业届数 (Year)</label>
+            <label className="block text-sm font-medium text-slate-700">届别 (Cohort)</label>
             <select
               value={formData.year}
               onChange={e => setFormData({...formData, year: Number(e.target.value)})}
-              className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2"
+              className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2 text-sm"
             >
               {years.map(y => <option key={y} value={y}>{y}届</option>)}
             </select>
+            <p className="text-[10px] text-slate-400 mt-1">指入学年份或常规划分的届别 (e.g. 2022届)</p>
           </div>
 
           <div>
@@ -107,7 +108,7 @@ const DataForm: React.FC<DataFormProps> = ({ onSubmit, onCancel }) => {
             <select
               value={formData.type}
               onChange={e => setFormData({...formData, type: e.target.value as StudentType})}
-              className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2"
+              className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2 text-sm"
             >
               {Object.values(StudentType).map(t => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -121,10 +122,9 @@ const DataForm: React.FC<DataFormProps> = ({ onSubmit, onCancel }) => {
             required
             value={formData.destination}
             onChange={e => setFormData({...formData, destination: e.target.value})}
-            className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2"
+            className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2 text-sm"
             placeholder="e.g., 北京大学, Google"
           />
-          <p className="text-xs text-slate-500 mt-1">请填写全称，方便归类 (Please use full name)</p>
         </div>
 
         <div>
@@ -133,10 +133,10 @@ const DataForm: React.FC<DataFormProps> = ({ onSubmit, onCancel }) => {
             type="text"
             value={formData.contact}
             onChange={e => setFormData({...formData, contact: e.target.value})}
-            className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2"
-            placeholder="Email, WeChat (匿名发布时也会显示此项)"
+            className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2 text-sm"
+            placeholder="Email, WeChat"
           />
-          <p className="text-xs text-slate-500 mt-1">如果愿意被咨询，请留下联系方式。</p>
+          <p className="text-xs text-slate-500 mt-1">即便匿名发布，此项也会在详情中显示供人咨询。</p>
         </div>
 
         <div className="flex items-center">
@@ -158,13 +158,13 @@ const DataForm: React.FC<DataFormProps> = ({ onSubmit, onCancel }) => {
             onClick={onCancel}
             className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            取消 (Cancel)
+            取消
           </button>
           <button
             type="submit"
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            提交 (Submit)
+            提交
           </button>
         </div>
       </form>
