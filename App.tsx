@@ -8,7 +8,7 @@ import DataForm from './components/DataForm';
 import AdminPanel from './components/AdminPanel';
 import AiAdvisor from './components/AiAdvisor';
 
-// Safe ID generator that works in all contexts (including non-secure http)
+// Safe ID generator that works in all contexts
 const generateId = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -24,6 +24,9 @@ const App: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<GroupedDestination | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // New state for major filtering
+  const [selectedMajor, setSelectedMajor] = useState<string>('全部');
 
   // --- Helpers ---
   const refreshData = async () => {
@@ -35,19 +38,31 @@ const App: React.FC = () => {
 
   // --- Effects ---
   useEffect(() => {
-    // Load data only after authentication
     if (authLevel !== AuthLevel.NONE) {
       refreshData();
     }
   }, [authLevel]);
 
   // --- Logic ---
+  
+  // Get unique majors for the filter bar
+  const availableMajors = useMemo(() => {
+    const majors = new Set<string>();
+    majors.add('全部');
+    students.forEach(s => majors.add(s.major));
+    return Array.from(majors);
+  }, [students]);
+
   const groupedData = useMemo(() => {
     const map = new Map<string, Student[]>();
-    students.forEach(s => {
-      // Filter out empty or "待定" destinations
-      if (!s.destination || s.destination.includes('待定')) return;
+    
+    // Apply major filter
+    const filteredStudents = selectedMajor === '全部' 
+      ? students 
+      : students.filter(s => s.major === selectedMajor);
 
+    filteredStudents.forEach(s => {
+      if (!s.destination || s.destination.includes('待定')) return;
       const key = s.destination;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(s);
@@ -57,14 +72,14 @@ const App: React.FC = () => {
     map.forEach((list, dest) => {
       groups.push({ destination: dest, count: list.length, students: list });
     });
-    // Sort by count descending
+    
     return groups.sort((a, b) => b.count - a.count);
-  }, [students]);
+  }, [students, selectedMajor]);
 
   const handleAddStudent = async (data: Omit<Student, 'id' | 'createdAt'>) => {
     const newStudent: Student = {
       ...data,
-      id: generateId(), // We still generate ID client side, or we could let DB do it
+      id: generateId(),
       createdAt: Date.now()
     };
     await storageService.saveStudent(newStudent);
@@ -78,7 +93,7 @@ const App: React.FC = () => {
   };
 
   const handleResetData = async () => {
-    if (window.confirm("WARNING: This will delete ALL data in the SHARED database and reset to the seed data. This affects ALL users. Are you sure?")) {
+    if (window.confirm("确定要重置所有数据吗？此操作不可逆。")) {
       await storageService.resetStudents();
       await refreshData();
     }
@@ -107,13 +122,13 @@ const App: React.FC = () => {
               onClick={() => { setView('map'); refreshData(); }}
               className={`px-3 py-1 rounded-md text-sm transition-colors ${view === 'map' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:text-white'}`}
             >
-              地图 (Map)
+              地图
             </button>
             <button 
               onClick={() => setView('add')}
               className={`px-3 py-1 rounded-md text-sm transition-colors ${view === 'add' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:text-white'}`}
             >
-              添加 (Add)
+              添加
             </button>
              <button 
               onClick={() => setView('advisor')}
@@ -134,7 +149,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -143,14 +158,29 @@ const App: React.FC = () => {
           <>
             {view === 'map' && (
               <>
-                <div className="mb-6 flex justify-between items-end">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-800">毕业去向分布 (Graduation Paths)</h2>
-                    <p className="text-slate-500 text-sm">点击卡片查看详细名单 (Click cards to see details)</p>
-                  </div>
-                  <div className="text-right text-xs text-slate-400">
-                     数据更新至 2030届<br/>
-                     Need help? <a href={`mailto:${ADMIN_EMAIL}`} className="text-indigo-500 hover:underline">Contact Admin</a>
+                <div className="mb-6">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-800">毕业去向分布</h2>
+                      <p className="text-slate-500 text-sm">点击卡片查看详细名单</p>
+                    </div>
+                    
+                    {/* Major Filter Tabs */}
+                    <div className="flex flex-wrap gap-2">
+                      {availableMajors.map(major => (
+                        <button
+                          key={major}
+                          onClick={() => setSelectedMajor(major)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                            selectedMajor === major 
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'
+                          }`}
+                        >
+                          {major}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -167,16 +197,12 @@ const App: React.FC = () => {
                 ) : (
                   <div className="text-center py-20 bg-white rounded-xl border border-slate-200 border-dashed">
                     <span className="text-4xl block mb-2">📭</span>
-                    <p className="text-slate-500 font-medium">暂无数据 (No Data Yet)</p>
-                    <p className="text-slate-400 text-sm mt-1">
-                      数据库中没有有效数据。<br/>
-                      请点击"添加"按钮录入新的去向信息。
-                    </p>
+                    <p className="text-slate-500 font-medium">该专业暂无去向记录</p>
                     <button 
-                       onClick={() => setView('add')}
-                       className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700"
+                       onClick={() => setSelectedMajor('全部')}
+                       className="mt-4 text-indigo-600 text-sm hover:underline"
                     >
-                      去添加 (Add Now)
+                      查看全部专业
                     </button>
                   </div>
                 )}
@@ -201,7 +227,10 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-40 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
              <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
-                <h3 className="text-lg font-bold text-slate-800">{selectedGroup.destination}</h3>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800">{selectedGroup.destination}</h3>
+                  <p className="text-xs text-slate-500">{selectedMajor === '全部' ? '所有专业' : selectedMajor} · 共 {selectedGroup.count} 人</p>
+                </div>
                 <button onClick={() => setSelectedGroup(null)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
              </div>
              <div className="p-4 overflow-y-auto">
@@ -210,16 +239,18 @@ const App: React.FC = () => {
                     <li key={s.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex flex-col">
                        <div className="flex justify-between items-start">
                          <div>
-                           <span className="font-bold text-slate-800">{s.isAnonymous ? '某同学 (Anonymous)' : s.name}</span>
-                           <span className="text-xs text-slate-500 ml-2">{s.year}届 · {s.major}</span>
+                           <span className="font-bold text-slate-800">{s.isAnonymous ? '某同学' : s.name}</span>
+                           <div className="flex gap-2 mt-1">
+                             <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">{s.major}</span>
+                             <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">{s.year}届</span>
+                           </div>
                          </div>
-                         <span className="px-2 py-1 text-xs bg-white border border-slate-200 rounded text-slate-600">{s.type}</span>
+                         <span className="px-2 py-1 text-[10px] bg-white border border-slate-200 rounded text-slate-600 font-medium">{s.type}</span>
                        </div>
                        
-                       {/* 显示联系方式：只要填写了就显示，不管是否匿名 */}
                        {s.contact && (
-                         <div className="mt-2 flex justify-end">
-                           <span className="inline-flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-1 rounded border border-green-100">
+                         <div className="mt-3 flex justify-end">
+                           <span className="inline-flex items-center gap-1 text-[11px] bg-green-50 text-green-700 px-2 py-1 rounded border border-green-100 shadow-sm">
                              <span>📞</span> {s.contact}
                            </span>
                          </div>
