@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Student, AuthLevel, GroupedDestination } from './types';
+import { Student, AuthLevel, GroupedDestination, StudentType } from './types';
 import { ADMIN_EMAIL } from './constants';
 import * as storageService from './services/storageService';
 import AuthGuard from './components/AuthGuard';
@@ -25,8 +25,9 @@ const App: React.FC = () => {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  // New state for major filtering
+  // Filtering states
   const [selectedMajor, setSelectedMajor] = useState<string>('全部');
+  const [selectedType, setSelectedType] = useState<string>('全部');
 
   // --- Helpers ---
   const refreshData = async () => {
@@ -53,13 +54,18 @@ const App: React.FC = () => {
     return Array.from(majors);
   }, [students]);
 
+  // Available types
+  const availableTypes = ['全部', ...Object.values(StudentType)];
+
   const groupedData = useMemo(() => {
     const map = new Map<string, Student[]>();
     
-    // Apply major filter
-    const filteredStudents = selectedMajor === '全部' 
-      ? students 
-      : students.filter(s => s.major === selectedMajor);
+    // Apply combined filter (Major AND Type)
+    const filteredStudents = students.filter(s => {
+      const majorMatch = selectedMajor === '全部' || s.major === selectedMajor;
+      const typeMatch = selectedType === '全部' || s.type === (selectedType as StudentType);
+      return majorMatch && typeMatch;
+    });
 
     filteredStudents.forEach(s => {
       if (!s.destination || s.destination.includes('待定')) return;
@@ -74,7 +80,7 @@ const App: React.FC = () => {
     });
     
     return groups.sort((a, b) => b.count - a.count);
-  }, [students, selectedMajor]);
+  }, [students, selectedMajor, selectedType]);
 
   const handleAddStudent = async (data: Omit<Student, 'id' | 'createdAt'>) => {
     const newStudent: Student = {
@@ -96,6 +102,17 @@ const App: React.FC = () => {
     if (window.confirm("确定要重置所有数据吗？此操作不可逆。")) {
       await storageService.resetStudents();
       await refreshData();
+    }
+  };
+
+  // Helper to get type color
+  const getTypeColor = (type: string) => {
+    switch(type) {
+      case StudentType.RECOMMENDATION: return 'bg-indigo-600';
+      case StudentType.EXAM: return 'bg-purple-600';
+      case StudentType.WORK: return 'bg-emerald-600';
+      case StudentType.ABROAD: return 'bg-sky-600';
+      default: return 'bg-slate-600';
     }
   };
 
@@ -158,28 +175,53 @@ const App: React.FC = () => {
           <>
             {view === 'map' && (
               <>
-                <div className="mb-6">
+                <div className="mb-8 space-y-4">
                   <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                     <div>
                       <h2 className="text-2xl font-bold text-slate-800">去向分布</h2>
-                      <p className="text-slate-500 text-sm">点击卡片查看详细名单</p>
+                      <p className="text-slate-500 text-sm">选择下方标签进行多维度筛选</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    {/* Major Filter */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-slate-400 uppercase min-w-[40px]">专业:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {availableMajors.map(major => (
+                          <button
+                            key={major}
+                            onClick={() => setSelectedMajor(major)}
+                            className={`px-3 py-1 rounded-full text-xs transition-all border ${
+                              selectedMajor === major 
+                                ? 'bg-slate-800 text-white border-slate-800' 
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            {major}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     
-                    {/* Major Filter Tabs */}
-                    <div className="flex flex-wrap gap-2">
-                      {availableMajors.map(major => (
-                        <button
-                          key={major}
-                          onClick={() => setSelectedMajor(major)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                            selectedMajor === major 
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'
-                          }`}
-                        >
-                          {major}
-                        </button>
-                      ))}
+                    {/* Type Filter */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-slate-400 uppercase min-w-[40px]">类型:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {availableTypes.map(type => (
+                          <button
+                            key={type}
+                            onClick={() => setSelectedType(type)}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all border ${
+                              selectedType === type 
+                                ? `${getTypeColor(type)} text-white border-transparent shadow-sm` 
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -196,14 +238,16 @@ const App: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center py-20 bg-white rounded-xl border border-slate-200 border-dashed">
-                    <span className="text-4xl block mb-2">📭</span>
-                    <p className="text-slate-500 font-medium">该专业暂无去向记录</p>
-                    <button 
-                       onClick={() => setSelectedMajor('全部')}
-                       className="mt-4 text-indigo-600 text-sm hover:underline"
-                    >
-                      查看全部专业
-                    </button>
+                    <span className="text-4xl block mb-2">🔍</span>
+                    <p className="text-slate-500 font-medium">该筛选条件下暂无数据</p>
+                    <div className="mt-4 flex justify-center gap-4">
+                      <button 
+                         onClick={() => {setSelectedMajor('全部'); setSelectedType('全部');}}
+                         className="text-indigo-600 text-sm hover:underline"
+                      >
+                        重置所有筛选
+                      </button>
+                    </div>
                   </div>
                 )}
               </>
@@ -229,7 +273,12 @@ const App: React.FC = () => {
              <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
                 <div>
                   <h3 className="text-lg font-bold text-slate-800">{selectedGroup.destination}</h3>
-                  <p className="text-xs text-slate-500">{selectedMajor === '全部' ? '所有专业' : selectedMajor} · 共 {selectedGroup.count} 人</p>
+                  <div className="flex gap-2 mt-1">
+                    <span className="text-[10px] text-slate-500">{selectedMajor}</span>
+                    <span className="text-[10px] text-slate-500">/</span>
+                    <span className="text-[10px] text-slate-500">{selectedType}</span>
+                    <span className="text-[10px] text-slate-500">· 共 {selectedGroup.count} 人</span>
+                  </div>
                 </div>
                 <button onClick={() => setSelectedGroup(null)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
              </div>
