@@ -134,8 +134,9 @@ const DataForm: React.FC<DataFormProps> = ({ onSubmit, onCancel }) => {
             value={formData.contact}
             onChange={e => setFormData({...formData, contact: e.target.value})}
             className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border p-2"
-            placeholder="Email, WeChat, etc."
+            placeholder="Email, WeChat (匿名发布时也会显示此项)"
           />
+          <p className="text-xs text-slate-500 mt-1">如果愿意被咨询，请留下联系方式。</p>
         </div>
 
         <div className="flex items-center">

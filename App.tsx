@@ -207,12 +207,23 @@ const App: React.FC = () => {
              <div className="p-4 overflow-y-auto">
                 <ul className="space-y-3">
                   {selectedGroup.students.map(s => (
-                    <li key={s.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex justify-between items-center">
-                       <div>
-                         <span className="font-bold text-slate-800">{s.isAnonymous ? '某同学 (Anonymous)' : s.name}</span>
-                         <span className="text-xs text-slate-500 ml-2">{s.year}届 · {s.major}</span>
+                    <li key={s.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex flex-col">
+                       <div className="flex justify-between items-start">
+                         <div>
+                           <span className="font-bold text-slate-800">{s.isAnonymous ? '某同学 (Anonymous)' : s.name}</span>
+                           <span className="text-xs text-slate-500 ml-2">{s.year}届 · {s.major}</span>
+                         </div>
+                         <span className="px-2 py-1 text-xs bg-white border border-slate-200 rounded text-slate-600">{s.type}</span>
                        </div>
-                       <span className="px-2 py-1 text-xs bg-white border border-slate-200 rounded text-slate-600">{s.type}</span>
+                       
+                       {/* 显示联系方式：只要填写了就显示，不管是否匿名 */}
+                       {s.contact && (
+                         <div className="mt-2 flex justify-end">
+                           <span className="inline-flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-1 rounded border border-green-100">
+                             <span>📞</span> {s.contact}
+                           </span>
+                         </div>
+                       )}
                     </li>
                   ))}
                 </ul>
